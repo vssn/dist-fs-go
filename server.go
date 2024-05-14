@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/vssn/dist-fs-go/p2p"
 )
@@ -16,8 +17,11 @@ type FileServerOpts struct {
 
 type FileServer struct {
 	FileServerOpts
-	store  *Store
-	quitch chan struct{}
+
+	peerLock sync.Mutex
+	peers    map[string]p2p.Peer
+	store    *Store
+	quitch   chan struct{}
 }
 
 func NewFileServer(opts FileServerOpts) *FileServer {
@@ -30,11 +34,21 @@ func NewFileServer(opts FileServerOpts) *FileServer {
 		FileServerOpts: opts,
 		store:          NewStore(storeopts),
 		quitch:         make(chan struct{}),
+		peers:          make(map[string]p2p.Peer),
 	}
 }
 
 func (s *FileServer) Stop() {
 	close(s.quitch)
+}
+
+func (s *FileServer) OnPeer(p p2p.Peer) error {
+	s.peerLock.Lock()
+	defer s.peerLock.Unlock()
+	s.peers[p.RemoteAddr().String()] = p
+
+	log.Printf("connected with remote %s", p.RemoteAddr())
+	return nil
 }
 
 func (s *FileServer) loop() {
@@ -55,10 +69,14 @@ func (s *FileServer) loop() {
 
 func (s *FileServer) bootstrapNetwork() error {
 	for _, addr := range s.BootstrapNodes {
+		if len(addr) == 0 {
+			continue
+		}
+
 		go func(addr string) {
+			fmt.Println("attempting to connect with remote: ", addr)
 			if err := s.Transport.Dial(addr); err != nil {
-				panic(err)
-				log.Println("dial error: %s", err)
+				log.Println("dial error: ", err)
 			}
 		}(addr)
 	}
