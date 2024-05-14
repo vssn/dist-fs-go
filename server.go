@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/vssn/dist-fs-go/p2p"
 )
@@ -38,6 +39,11 @@ func (s *FileServer) Stop() {
 }
 
 func (s *FileServer) loop() {
+	defer func() {
+		log.Println("file server stopped due to user quit action")
+		s.Transport.Close()
+	}()
+
 	for {
 		select {
 		case msg := <-s.Transport.Consume():
@@ -52,6 +58,8 @@ func (s *FileServer) Start() error {
 	if err := s.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
+
+	s.loop()
 
 	return nil
 }

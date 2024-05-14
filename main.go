@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/vssn/dist-fs-go/p2p"
 )
@@ -23,10 +24,13 @@ func main() {
 	}
 
 	s := NewFileServer(fileServerOpts)
+	go func() {
+		time.Sleep(time.Second * 3)
+		s.Stop()
+	}()
 
 	if err := s.Start(); err != nil {
 		log.Fatal(err)
 	}
 
-	select {}
 }
