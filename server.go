@@ -56,35 +56,48 @@ type Message struct {
 	Payload any
 }
 
-type DataMessage struct {
-	Key  string
-	Data []byte
-}
-
 func (s *FileServer) StoreData(key string, r io.Reader) error {
 	// 1. Store this file to disk
 	// 2. broadcast this file to the known peers in the network
+
 	buf := new(bytes.Buffer)
+	msg := Message{
+		Payload: []byte("storagekey"),
+	}
 
-	tee := io.TeeReader(r, buf)
-
-	if err := s.store.Write(key, tee); err != nil {
+	if err := gob.NewEncoder(buf).Encode(msg); err != nil {
 		return err
 	}
 
-	p := &DataMessage{
-		Key:  key,
-		Data: buf.Bytes(),
+	for _, peer := range s.peers {
+		if err := peer.Send(buf.Bytes()); err != nil {
+			return err
+		}
 	}
 
-	fmt.Println(buf.String())
+	return nil
 
-	// the reader is empty
+	// buf := new(bytes.Buffer)
 
-	return s.broadcast(&Message{
-		From:    "todo",
-		Payload: p,
-	})
+	// tee := io.TeeReader(r, buf)
+
+	// if err := s.store.Write(key, tee); err != nil {
+	// 	return err
+	// }
+
+	// p := &DataMessage{
+	// 	Key:  key,
+	// 	Data: buf.Bytes(),
+	// }
+
+	// fmt.Println(buf.String())
+
+	// // the reader is empty
+
+	// return s.broadcast(&Message{
+	// 	From:    "todo",
+	// 	Payload: p,
+	// })
 }
 
 func (s *FileServer) Stop() {
@@ -108,29 +121,31 @@ func (s *FileServer) loop() {
 
 	for {
 		select {
-		case msg := <-s.Transport.Consume():
-			var m Message
-			if err := gob.NewDecoder(bytes.NewReader(msg.Payload)).Decode(&m); err != nil {
-				log.Fatal(err)
-			}
-
-			if err := s.handleMessage(&m); err != nil {
+		case rpc := <-s.Transport.Consume():
+			var msg Message
+			if err := gob.NewDecoder(bytes.NewReader(rpc.Payload)).Decode(&msg); err != nil {
 				log.Println(err)
 			}
+
+			fmt.Printf("recv: %s", string(msg.Payload.([]byte)))
+
+			// if err := s.handleMessage(&m); err != nil {
+			// 	log.Println(err)
+			// }
 		case <-s.quitch:
 			return
 		}
 	}
 }
 
-func (s *FileServer) handleMessage(msg *Message) error {
-	switch v := msg.Payload.(type) {
-	case *DataMessage:
-		fmt.Printf("received data %+v\n", v)
-	}
+// func (s *FileServer) handleMessage(msg *Message) error {
+// 	switch v := msg.Payload.(type) {
+// 	case *DataMessage:
+// 		fmt.Printf("received data %+v\n", v)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (s *FileServer) bootstrapNetwork() error {
 	for _, addr := range s.BootstrapNodes {
