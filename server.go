@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/vssn/dist-fs-go/p2p"
 )
@@ -52,8 +53,11 @@ func (s *FileServer) broadcast(msg *Message) error {
 }
 
 type Message struct {
-	From    string
 	Payload any
+}
+
+type MessageStoreFile struct {
+	Key string
 }
 
 func (s *FileServer) StoreData(key string, r io.Reader) error {
@@ -62,7 +66,9 @@ func (s *FileServer) StoreData(key string, r io.Reader) error {
 
 	buf := new(bytes.Buffer)
 	msg := Message{
-		Payload: []byte("storagekey"),
+		Payload: MessageStoreFile{
+			Key: key,
+		},
 	}
 
 	if err := gob.NewEncoder(buf).Encode(msg); err != nil {
@@ -74,6 +80,8 @@ func (s *FileServer) StoreData(key string, r io.Reader) error {
 			return err
 		}
 	}
+
+	time.Sleep(time.Second * 3)
 
 	payload := []byte("THIS LARGE FILE")
 
@@ -135,6 +143,8 @@ func (s *FileServer) loop() {
 				log.Println(err)
 			}
 
+			fmt.Printf("payload: %+v\n", msg.Payload)
+
 			peer, ok := s.peers[rpc.From]
 			if !ok {
 				panic("no peer in peers map")
@@ -145,9 +155,9 @@ func (s *FileServer) loop() {
 				panic(err)
 			}
 
-			panic("ddd")
+			fmt.Printf("%s\n", string(b))
 
-			fmt.Printf("recv: %s\n", string(msg.Payload.([]byte)))
+			peer.(*p2p.TCPPeer).Wg.Done()
 
 			// if err := s.handleMessage(&m); err != nil {
 			// 	log.Println(err)
@@ -194,4 +204,8 @@ func (s *FileServer) Start() error {
 	s.loop()
 
 	return nil
+}
+
+func init() {
+	gob.Register(MessageStoreFile{})
 }
