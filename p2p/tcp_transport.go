@@ -131,7 +131,6 @@ func (t *TCPTransport) handleConn(conn net.Conn, outbound bool) {
 
 	// Read loop
 	rpc := RPC{}
-
 	for {
 		err := t.Decoder.Decode(conn, &rpc)
 		if err != nil {
