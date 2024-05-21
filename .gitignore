@@ -1,3 +1,2 @@
 bin
-:3000_network
-:4000_network
+*_network
