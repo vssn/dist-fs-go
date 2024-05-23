@@ -98,7 +98,7 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 		return nil, err
 	}
 
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Millisecond * 5)
 
 	for _, peer := range s.peers {
 		fmt.Println("receiving stream from peer: ", peer.RemoteAddr())
@@ -140,7 +140,7 @@ func (s *FileServer) Store(key string, r io.Reader) error {
 		return err
 	}
 
-	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Millisecond * 5)
 
 	// TODO: use a multiwriter here.
 	for _, peer := range s.peers {
@@ -240,7 +240,7 @@ func (s *FileServer) handleMessageStoreFile(from string, msg MessageStoreFile) e
 	if err != nil {
 		return err
 	}
-	log.Printf("written (%d) bytes to disk", n)
+	log.Printf("[%s] written (%d) bytes to disk", s.Transport.Addr(), n)
 
 	peer.(*p2p.TCPPeer).Wg.Done()
 

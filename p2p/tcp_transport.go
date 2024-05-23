@@ -30,6 +30,12 @@ func NewTCPPeer(conn net.Conn, outbound bool) *TCPPeer {
 	}
 }
 
+// Addr implements the transport interface, return the address
+// the transport is accepting connections
+func (t *TCPTransport) Addr() string {
+	return t.ListenAddr
+}
+
 func (p *TCPPeer) Send(b []byte) error {
 	_, err := p.Conn.Write(b)
 	return err
@@ -130,8 +136,8 @@ func (t *TCPTransport) handleConn(conn net.Conn, outbound bool) {
 	}
 
 	// Read loop
-	rpc := RPC{}
 	for {
+		rpc := RPC{}
 		err := t.Decoder.Decode(conn, &rpc)
 		if err != nil {
 			return
