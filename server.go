@@ -83,10 +83,11 @@ type MessageGetFile struct {
 
 func (s *FileServer) Get(key string) (io.Reader, error) {
 	if s.store.Has(key) {
+		fmt.Printf("[%s] serving file (%s) from local disk \n", s.Transport.Addr(), key)
 		return s.store.Read(key)
 	}
 
-	fmt.Printf("dont have file (%s) locally\n, fetching from network...\n", key)
+	fmt.Printf("[%s] dont have file (%s) locally, fetching from network...\n", s.Transport.Addr(), key)
 
 	msg := Message{
 		Payload: MessageGetFile{
@@ -98,10 +99,9 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 		return nil, err
 	}
 
-	time.Sleep(time.Millisecond * 5)
+	time.Sleep(time.Millisecond * 500)
 
 	for _, peer := range s.peers {
-		fmt.Println("receiving stream from peer: ", peer.RemoteAddr())
 		fileBuffer := new(bytes.Buffer)
 		n, err := io.CopyN(fileBuffer, peer, 10)
 
@@ -109,8 +109,10 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 			return nil, err
 		}
 
-		fmt.Println("received bytes over the network: ", n)
+		fmt.Printf("[%s] received (%d) bytes over the network from (%s) ", s.Transport.Addr(), n, peer.RemoteAddr())
 		fmt.Println(fileBuffer.String())
+
+		peer.CloseStream()
 	}
 
 	select {}
@@ -205,10 +207,10 @@ func (s *FileServer) handleMessage(from string, msg *Message) error {
 
 func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error {
 	if !s.store.Has(msg.Key) {
-		return fmt.Errorf("need to serve file (%s) but it does not exist on disk", msg.Key)
+		return fmt.Errorf("[%s] need to serve file (%s) but it does not exist on disk", s.Transport.Addr(), msg.Key)
 	}
 
-	fmt.Printf("serving file (%s) over the network\n", msg.Key)
+	fmt.Printf("[%s] serving file (%s) over the network\n", s.Transport.Addr(), msg.Key)
 
 	r, err := s.store.Read(msg.Key)
 	if err != nil {
@@ -219,6 +221,8 @@ func (s *FileServer) handleMessageGetFile(from string, msg MessageGetFile) error
 	if !ok {
 		return fmt.Errorf("peer %s not in map", from)
 	}
+
+	peer.Send([]byte{p2p.IncomingStream})
 
 	n, err := io.Copy(peer, r)
 	if err != nil {
