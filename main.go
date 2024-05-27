@@ -42,7 +42,6 @@ func main() {
 	time.Sleep(2 * time.Second)
 
 	go s2.Start()
-
 	time.Sleep(2 * time.Second)
 
 	// data := bytes.NewReader([]byte("my big data file here!"))
@@ -50,7 +49,6 @@ func main() {
 	// time.Sleep(5 * time.Millisecond)
 
 	r, err := s2.Get("coolPicture.jpg")
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,6 +59,4 @@ func main() {
 	}
 
 	fmt.Println(string(b))
-
-	select {}
 }
