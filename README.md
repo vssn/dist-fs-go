@@ -8,3 +8,4 @@ make run
 
 ## Running the tests
 make test
+*_test.go files containing test functions that can be executed from the IDE.
