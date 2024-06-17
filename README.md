@@ -7,4 +7,5 @@ https://www.youtube.com/watch?v=bymQakvTY40&t=6610s
 make run
 
 ## Running the tests
-make test
+- make test
+- *_test.go files containing test functions that can be executed from the IDE.
