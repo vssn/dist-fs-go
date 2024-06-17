@@ -84,7 +84,7 @@ func (s *FileServer) Get(key string) (io.Reader, error) {
 
 	msg := Message{
 		Payload: MessageGetFile{
-			Key: key,
+			Key: hashKey(key),
 		},
 	}
 
@@ -126,7 +126,7 @@ func (s *FileServer) Store(key string, r io.Reader) error {
 
 	msg := Message{
 		Payload: MessageStoreFile{
-			Key:  key,
+			Key:  hashKey(key),
 			Size: size + 16,
 		},
 	}
@@ -151,7 +151,7 @@ func (s *FileServer) Store(key string, r io.Reader) error {
 		return nil
 	}
 
-	fmt.Println("[%s] received and written (%d) bytes to disk\n", s.Transport.Addr(), n)
+	fmt.Printf("[%s] received and written (%d) bytes to disk\n", s.Transport.Addr(), n)
 
 	return nil
 }
@@ -263,7 +263,7 @@ func (s *FileServer) bootstrapNetwork() error {
 		}
 
 		go func(addr string) {
-			fmt.Println("[%s] attempting to connect with remote %s\n", s.Transport.Addr(), addr)
+			fmt.Printf("[%s] attempting to connect with remote %s\n", s.Transport.Addr(), addr)
 			if err := s.Transport.Dial(addr); err != nil {
 				log.Println("dial error: ", err)
 			}
