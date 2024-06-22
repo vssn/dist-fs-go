@@ -81,7 +81,7 @@ func main() {
 }
 
 func readFilenames(s3 *FileServer) {
-	fmt.Println("input text:")
+	fmt.Println("One filename per line:")
 	scanner := bufio.NewScanner(os.Stdin)
 
 	var lines []string
@@ -113,6 +113,8 @@ func readFilenames(s3 *FileServer) {
 		s3.Store(l, data)
 
 		fmt.Println("File stored.")
+
+		readFilenames(s3)
 
 	}
 }
