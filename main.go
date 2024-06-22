@@ -76,8 +76,81 @@ func main() {
 		fmt.Println(string(b))
 	} */
 
-	readFilenames(s3)
+	for {
+		switch inputChoice() {
+		case "1":
+			readFilenames(s3)
+		case "2":
+			fmt.Println("One filename per line:")
+			scanner := bufio.NewScanner(os.Stdin)
 
+			var lines []string
+			for {
+				scanner.Scan()
+				line := scanner.Text()
+				if len(line) == 0 {
+					break
+				}
+				lines = append(lines, line)
+			}
+
+			for _, l := range lines {
+				if err := s3.store.Delete(s3.ID, l); err != nil {
+					log.Fatal(err)
+				}
+			}
+
+		case "3":
+			fmt.Println("One filename per line:")
+			scanner := bufio.NewScanner(os.Stdin)
+
+			var lines []string
+			for {
+				scanner.Scan()
+				line := scanner.Text()
+				if len(line) == 0 {
+					break
+				}
+				lines = append(lines, line)
+			}
+
+			for _, l := range lines {
+				r, err := s3.Get(l)
+
+				if err != nil {
+					fmt.Printf("File %s not found in storage", l)
+					break
+				}
+
+				b, err := io.ReadAll(r)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				fmt.Println(string(b))
+			}
+
+		default:
+			fmt.Println("No input accepted. \n\n")
+		}
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+}
+
+func inputChoice() string {
+	fmt.Println(`Please select what you would like to do:
+	[1] Add files
+	[2] Delete files
+	[3] Get files
+	`)
+	scanner := bufio.NewScanner(os.Stdin)
+
+	scanner.Scan()
+	line := scanner.Text()
+
+	return line
 }
 
 func readFilenames(s3 *FileServer) {
@@ -113,9 +186,6 @@ func readFilenames(s3 *FileServer) {
 		s3.Store(l, data)
 
 		fmt.Println("File stored.")
-
-		readFilenames(s3)
-
 	}
 }
 
@@ -134,5 +204,4 @@ func readFile(filename string) ([]byte, error) {
 	fmt.Println(string(b))
 
 	return b, nil
-
 }
