@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
+	"os"
 	"time"
 
 	"github.com/vssn/dist-fs-go/p2p"
@@ -51,7 +53,7 @@ func main() {
 	go s3.Start()
 	time.Sleep(2 * time.Second)
 
-	for i := 0; i < 20; i++ {
+	/* 	for i := 0; i < 20; i++ {
 
 		key := fmt.Sprintf("picture_%d.png", i)
 		data := bytes.NewReader([]byte("my big data file here!"))
@@ -72,6 +74,63 @@ func main() {
 		}
 
 		fmt.Println(string(b))
+	} */
+
+	readFilenames(s3)
+
+}
+
+func readFilenames(s3 *FileServer) {
+	fmt.Println("input text:")
+	scanner := bufio.NewScanner(os.Stdin)
+
+	var lines []string
+	for {
+		scanner.Scan()
+		line := scanner.Text()
+		if len(line) == 0 {
+			break
+		}
+		lines = append(lines, line)
 	}
+
+	err := scanner.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("output:")
+	for _, l := range lines {
+		fmt.Printf("Attempt to read %s:\n", l)
+		b, err := readFile(l)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		data := bytes.NewReader(b)
+
+		s3.Store(l, data)
+
+		fmt.Println("File stored.")
+
+	}
+}
+
+func readFile(filename string) ([]byte, error) {
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	b, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(b))
+
+	return b, nil
 
 }
